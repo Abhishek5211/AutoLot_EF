@@ -1,0 +1,66 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace AutoLot.Dal.EfStructures
+{
+    public class MigrationHelpers
+    {
+        public static void CreateCustomerOrderView(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql(@"exec (N' 
+                CREATE VIEW [dbo].[CustomerOrderView]
+                AS
+                SELECT c.FirstName, c.LastName, i.Color, i.NickName, 
+                    i.DateBuilt, i.IsDrivable, i.Price, i.Display, m.Name AS Make
+                FROM dbo.Orders o
+                INNER JOIN dbo.Customers c ON c.Id = o.CustomerId
+                INNER JOIN dbo.Inventory i ON i.Id = o.CarId
+                INNER JOIN dbo.Makes m ON m.Id = i.MakeId')");
+        }
+
+        public static void DropCustomerOrderView(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql("EXEC (N' DROP VIEW [dbo].[CustomerOrderView] ')");
+        }
+        public static void CreateSproc(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql(@"exec (N' 
+                CREATE PROCEDURE [dbo].[GetNickName]
+                    @carID int,
+                    @NickName nvarchar(50) output
+                AS
+                    SELECT @NickName = NickName from dbo.Inventory where Id = @carID')");
+        }
+        public static void DropSproc(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql("EXEC (N' DROP PROCEDURE [dbo].[GetNickName]')");
+        }
+        public static void CreateFunctions(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql(@"exec (N'
+                CREATE FUNCTION [dbo].[udtf_GetCarsForMake] ( @makeId int )
+                RETURNS TABLE 
+                AS
+                RETURN 
+                (
+                    SELECT Id, IsDrivable, DateBuilt, Color, NickName, MakeId, TimeStamp, Display, Price
+                    FROM Inventory WHERE MakeId = @makeId
+                )')");
+            migrationBuilder.Sql(@"exec (N'
+                CREATE FUNCTION [dbo].[udf_CountOfMakes] ( @makeid int )
+                RETURNS int
+                AS
+                BEGIN
+                    DECLARE @Result int
+                    SELECT @Result = COUNT(makeid) FROM dbo.Inventory WHERE makeid = @makeid
+                    RETURN @Result
+                END')");
+        }
+        public static void DropFunctions(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql("EXEC (N' DROP FUNCTION [dbo].[udtf_GetCarsForMake]')");
+            migrationBuilder.Sql("EXEC (N' DROP FUNCTION [dbo].[udf_CountOfMakes]')");
+        }
+    }
+}
